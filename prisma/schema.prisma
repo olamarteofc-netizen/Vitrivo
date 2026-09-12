@@ -1,0 +1,259 @@
+// Prisma schema — VITRIVO
+//
+// Decisão técnica (reversível): usamos SQLite em desenvolvimento/teste por
+// não exigir um servidor de banco de dados externo neste ambiente. O schema
+// evita recursos exclusivos de um provedor (sem enums nativos, sem arrays
+// nativos, sem tipos específicos de Postgres) para que a migração para
+// PostgreSQL em produção exija apenas trocar `provider` para "postgresql" e
+// apontar `DATABASE_URL` para o banco definitivo (ex.: Vercel Postgres, Neon,
+// Supabase). Ver README.md > "Banco de dados" para o passo a passo.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Administração
+// ---------------------------------------------------------------------------
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String    @default("ADMIN") // "ADMIN" | "EDITOR"
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLoginAt  DateTime?
+
+  auditLogs AuditLog[]
+
+  @@map("admin_users")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  adminUserId String
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  action      String // ex: "product.create", "offer.deactivate"
+  entityType  String // ex: "Product", "Offer", "Category"
+  entityId    String
+  metadata    String? // JSON serializado, sem segredos
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Catálogo
+// ---------------------------------------------------------------------------
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  imageUrl    String?
+  active      Boolean  @default(true)
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products Product[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  products ProductTag[]
+
+  @@map("tags")
+}
+
+model Product {
+  id               String    @id @default(cuid())
+  title            String
+  slug             String    @unique
+  shortDescription String
+  description      String
+  // Blocos de conteúdo adicionais previstos na especificação.
+  benefits         String? // JSON: string[]
+  howItWorks       String?
+  specifications   String? // JSON: { label: string; value: string }[]
+  warnings         String?
+  status           String    @default("DRAFT") // "DRAFT" | "PUBLISHED" | "ARCHIVED"
+  featured         Boolean   @default(false)
+  categoryId       String?
+  category         Category? @relation(fields: [categoryId], references: [id])
+  seoTitle         String?
+  seoDescription   String?
+  publishedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  media  ProductMedia[]
+  tags   ProductTag[]
+  offers Offer[]
+  clicks OutboundClick[]
+
+  @@index([status])
+  @@index([categoryId])
+  @@map("products")
+}
+
+model ProductTag {
+  productId String
+  tagId     String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+  @@map("product_tags")
+}
+
+model ProductMedia {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type      String // "IMAGE" | "VIDEO"
+  url       String
+  altText   String?
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@map("product_media")
+}
+
+// ---------------------------------------------------------------------------
+// Marketplaces e ofertas afiliadas
+// ---------------------------------------------------------------------------
+
+model Marketplace {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  logoUrl         String?
+  active          Boolean  @default(true)
+  disclosureText  String?
+  // Extensão técnica (não descrita literalmente na especificação, mas exigida
+  // pela regra "allowlist configurável de marketplaces" e "validar domínio
+  // permitido"): hosts autorizados para as ofertas deste marketplace,
+  // separados por vírgula (ex.: "shopee.com.br,s.shopee.com.br").
+  allowedHosts    String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  offers Offer[]
+
+  @@map("marketplaces")
+}
+
+model Offer {
+  id             String    @id @default(cuid())
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  marketplaceId  String
+  marketplace    Marketplace @relation(fields: [marketplaceId], references: [id])
+  destinationUrl String // URL final do produto no marketplace (referência/exibição)
+  affiliateUrl   String // URL de afiliado usada de fato no redirecionamento
+  referencePrice Float?
+  currency       String    @default("BRL")
+  label          String?
+  notes          String?
+  isPrimary      Boolean   @default(false)
+  active         Boolean   @default(true)
+  position       Int       @default(0)
+  lastCheckedAt  DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  clicks OutboundClick[]
+
+  @@index([productId])
+  @@index([marketplaceId])
+  @@map("offers")
+}
+
+model OutboundClick {
+  id           String   @id @default(cuid())
+  offerId      String
+  offer        Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  occurredAt   DateTime @default(now())
+  sessionId    String // identificador anonimizado (hash), sem PII
+  referrer     String?
+  landingPath  String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  utmContent   String?
+  utmTerm      String?
+  deviceClass  String? // "mobile" | "desktop" | "tablet" | "unknown"
+
+  @@index([offerId])
+  @@index([productId])
+  @@index([occurredAt])
+  @@map("outbound_clicks")
+}
+
+// ---------------------------------------------------------------------------
+// Configuração e conteúdo
+// ---------------------------------------------------------------------------
+
+model SiteSetting {
+  key       String   @id
+  value     String
+  type      String   @default("string") // "string" | "number" | "boolean" | "json"
+  public    Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+// Extensão técnica (não listada no modelo sugerido, mas necessária para que
+// a página pública /contato tenha uma função real, sem depender de um
+// provedor de e-mail transacional externo/pago ainda não autorizado):
+// mensagens ficam registradas e visíveis em /admin/mensagens.
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("contact_messages")
+}
+
+model ContentPage {
+  id             String    @id @default(cuid())
+  slug           String    @unique
+  title          String
+  body           String
+  // "PAGE" para institucionais/legais (rotas fixas), "GUIDE" para conteúdo
+  // editorial listado em /guias.
+  type           String    @default("PAGE")
+  status         String    @default("DRAFT") // "DRAFT" | "PUBLISHED"
+  seoTitle       String?
+  seoDescription String?
+  publishedAt    DateTime?
+  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime  @default(now())
+
+  @@index([type, status])
+  @@map("content_pages")
+}
