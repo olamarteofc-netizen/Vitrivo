@@ -1,20 +1,18 @@
 // Prisma schema — VITRIVO
 //
-// Decisão técnica (reversível): usamos SQLite em desenvolvimento/teste por
-// não exigir um servidor de banco de dados externo neste ambiente. O schema
-// evita recursos exclusivos de um provedor (sem enums nativos, sem arrays
-// nativos, sem tipos específicos de Postgres) para que a migração para
-// PostgreSQL em produção exija apenas trocar `provider` para "postgresql" e
-// apontar `DATABASE_URL` para o banco definitivo (ex.: Vercel Postgres, Neon,
-// Supabase). Ver README.md > "Banco de dados" para o passo a passo.
+// Produção: PostgreSQL (Vercel Postgres via Neon). `DATABASE_URL` usa a
+// conexão pooled (para queries em runtime serverless) e `DIRECT_URL` usa a
+// conexão direta (para `prisma migrate deploy`). Local/dev pode seguir usando
+// um Postgres local ou de teste — ver README.md > "Banco de dados".
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ---------------------------------------------------------------------------
