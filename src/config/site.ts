@@ -13,7 +13,8 @@ export type SiteConfig = {
   name: string;
   slogan: string;
   url: string;
-  contactEmail: string;
+  /** `undefined` quando ainda não configurado — nunca exibir um e-mail inventado. */
+  contactEmail: string | undefined;
   social: {
     instagram?: string;
     tiktok?: string;
@@ -46,8 +47,7 @@ export const siteConfig: SiteConfig = {
     readOptional(process.env.NEXT_PUBLIC_SITE_SLOGAN) ??
     "Curadoria confiável de produtos",
   url: readOptional(process.env.NEXT_PUBLIC_SITE_URL) ?? "http://localhost:3000",
-  contactEmail:
-    readOptional(process.env.NEXT_PUBLIC_CONTACT_EMAIL) ?? "contato@exemplo.com",
+  contactEmail: readOptional(process.env.NEXT_PUBLIC_CONTACT_EMAIL),
   social: {
     instagram: readOptional(process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM),
     tiktok: readOptional(process.env.NEXT_PUBLIC_SOCIAL_TIKTOK),

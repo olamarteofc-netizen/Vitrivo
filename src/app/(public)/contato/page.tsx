@@ -15,16 +15,18 @@ export default function ContactPage() {
       <p className="mt-2 text-sm text-ink-500">{LEGAL_CONTACT_NOTE}</p>
 
       <div className="mt-8 grid gap-8 sm:grid-cols-[1fr_1.3fr]">
-        <Card className="h-fit">
-          <CardBody className="space-y-3">
-            <div className="flex items-center gap-2 text-sm text-ink-700">
-              <Mail className="h-4 w-4 text-brand-700" />
-              <a href={`mailto:${siteConfig.contactEmail}`} className="hover:text-brand-700">
-                {siteConfig.contactEmail}
-              </a>
-            </div>
-          </CardBody>
-        </Card>
+        {siteConfig.contactEmail && (
+          <Card className="h-fit">
+            <CardBody className="space-y-3">
+              <div className="flex items-center gap-2 text-sm text-ink-700">
+                <Mail className="h-4 w-4 text-brand-700" />
+                <a href={`mailto:${siteConfig.contactEmail}`} className="hover:text-brand-700">
+                  {siteConfig.contactEmail}
+                </a>
+              </div>
+            </CardBody>
+          </Card>
+        )}
 
         <ContactForm />
       </div>

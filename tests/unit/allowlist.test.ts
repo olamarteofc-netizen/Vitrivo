@@ -6,6 +6,7 @@ import {
   validateAffiliateUrl,
   classifyDevice,
 } from "@/lib/redirect/allowlist";
+import { MARKETPLACE_BOOTSTRAP } from "@/lib/domain/marketplace-bootstrap";
 
 describe("normalizeHost", () => {
   it("coloca em minúsculas e remove www.", () => {
@@ -80,6 +81,36 @@ describe("validateAffiliateUrl", () => {
     // ataques comuns de open redirect: usar shopee.com.br como usuário ou subpath de outro domínio
     const result = validateAffiliateUrl("https://shopee.com.br@evil.com/path", allowed);
     expect(result.ok).toBe(false);
+  });
+});
+
+describe("marketplace bootstrap — Mercado Livre e meli.la", () => {
+  const mercadoLivre = MARKETPLACE_BOOTSTRAP.find((m) => m.slug === "mercado-livre")!;
+
+  it("aceita link curto de afiliado meli.la para Mercado Livre", () => {
+    const result = validateAffiliateUrl("https://meli.la/abcDEF123", mercadoLivre.allowedHosts);
+    expect(result.ok).toBe(true);
+  });
+
+  it("aceita URL longa oficial mercadolivre.com.br", () => {
+    const result = validateAffiliateUrl(
+      "https://produto.mercadolivre.com.br/MLB-123456-escova-eletrica-_JM",
+      mercadoLivre.allowedHosts,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejeita domínio falso que só contém mercadolivre.com.br como prefixo de outro host", () => {
+    const result = validateAffiliateUrl(
+      "https://mercadolivre.com.br.site-malicioso.com/produto",
+      mercadoLivre.allowedHosts,
+    );
+    expect(result).toEqual({ ok: false, reason: "host-not-allowed" });
+  });
+
+  it("rejeita domínio parecido mas não relacionado a meli.la", () => {
+    const result = validateAffiliateUrl("https://meli.la.evil.com/x", mercadoLivre.allowedHosts);
+    expect(result).toEqual({ ok: false, reason: "host-not-allowed" });
   });
 });
 

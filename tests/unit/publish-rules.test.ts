@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { checkProductPublishable, pickPrimaryOffer, sortAlternateOffers } from "@/lib/domain/publish-rules";
+import {
+  checkProductPublishable,
+  buildPublishChecklist,
+  pickPrimaryOffer,
+  sortAlternateOffers,
+} from "@/lib/domain/publish-rules";
 
 const validInput = {
   title: "Produto X",
@@ -7,10 +12,11 @@ const validInput = {
   shortDescription: "Resumo",
   description: "Descrição completa",
   activeOfferCount: 1,
+  mediaCount: 1,
 };
 
 describe("checkProductPublishable", () => {
-  it("permite publicar quando todos os campos obrigatórios estão presentes e há oferta ativa", () => {
+  it("permite publicar quando todos os campos obrigatórios estão presentes, há mídia e oferta ativa", () => {
     expect(checkProductPublishable(validInput)).toEqual({ canPublish: true });
   });
 
@@ -19,6 +25,14 @@ describe("checkProductPublishable", () => {
     expect(result.canPublish).toBe(false);
     if (!result.canPublish) {
       expect(result.reasons.some((r) => r.toLowerCase().includes("oferta"))).toBe(true);
+    }
+  });
+
+  it("bloqueia publicação sem nenhuma mídia", () => {
+    const result = checkProductPublishable({ ...validInput, mediaCount: 0 });
+    expect(result.canPublish).toBe(false);
+    if (!result.canPublish) {
+      expect(result.reasons.some((r) => r.toLowerCase().includes("imagem"))).toBe(true);
     }
   });
 
@@ -34,11 +48,35 @@ describe("checkProductPublishable", () => {
       shortDescription: "",
       description: "",
       activeOfferCount: 0,
+      mediaCount: 0,
     });
     expect(result.canPublish).toBe(false);
     if (!result.canPublish) {
-      expect(result.reasons.length).toBe(5);
+      // title, slug, summary, description, media, offer e primaryOffer:
+      // "oferta ativa" e "oferta principal" falham juntas quando não há
+      // nenhuma oferta ativa, mas são itens distintos no checklist visual.
+      expect(result.reasons.length).toBe(7);
     }
+  });
+});
+
+describe("buildPublishChecklist", () => {
+  it("marca oferta principal como satisfeita sempre que há oferta ativa", () => {
+    const checklist = buildPublishChecklist(validInput);
+    const primary = checklist.find((item) => item.key === "primaryOffer");
+    expect(primary?.ok).toBe(true);
+  });
+
+  it("marca todos os itens como pendentes para um produto vazio", () => {
+    const checklist = buildPublishChecklist({
+      title: "",
+      slug: "",
+      shortDescription: "",
+      description: "",
+      activeOfferCount: 0,
+      mediaCount: 0,
+    });
+    expect(checklist.every((item) => !item.ok)).toBe(true);
   });
 });
 

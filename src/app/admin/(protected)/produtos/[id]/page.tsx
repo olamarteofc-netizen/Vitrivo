@@ -5,7 +5,8 @@ import { getProductByIdAdmin, parseBenefits, parseSpecifications } from "@/lib/s
 import { listCategoriesAdmin } from "@/lib/services/categories";
 import { listTags } from "@/lib/services/tags";
 import { listActiveMarketplaces } from "@/lib/services/marketplaces";
-import { checkProductPublishable } from "@/lib/domain/publish-rules";
+import { buildPublishChecklist } from "@/lib/domain/publish-rules";
+import { Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { Button } from "@/components/ui/button";
@@ -52,13 +53,16 @@ export default async function EditProductPage({ params }: Props) {
   if (!product) notFound();
 
   const activeOfferCount = product.offers.filter((o) => o.active).length;
-  const publishCheck = checkProductPublishable({
+  const checklist = buildPublishChecklist({
     title: product.title,
     slug: product.slug,
     shortDescription: product.shortDescription,
     description: product.description,
     activeOfferCount,
+    mediaCount: product.media.length,
   });
+  const pendingItems = checklist.filter((item) => !item.ok);
+  const canPublish = pendingItems.length === 0;
 
   const boundUpdate = updateProductAction.bind(null, product.id);
 
@@ -95,7 +99,7 @@ export default async function EditProductPage({ params }: Props) {
       <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface p-4">
         {product.status !== "PUBLISHED" && (
           <form action={publishProductAction.bind(null, product.id)}>
-            <Button type="submit" disabled={!publishCheck.canPublish}>
+            <Button type="submit" disabled={!canPublish}>
               Publicar
             </Button>
           </form>
@@ -118,10 +122,26 @@ export default async function EditProductPage({ params }: Props) {
             </ConfirmSubmitButton>
           </form>
         )}
-        {!publishCheck.canPublish && product.status !== "PUBLISHED" && (
-          <p className="text-sm text-danger-600">{publishCheck.reasons.join(" ")}</p>
-        )}
       </div>
+
+      {product.status !== "PUBLISHED" && (
+        <div className="mt-4 rounded-xl border border-border bg-surface p-4">
+          <p className="text-sm font-semibold text-ink-900">
+            {canPublish ? "Pronto para publicar" : `Faltam ${pendingItems.length} item(ns) para publicar`}
+          </p>
+          <ul className="mt-2 grid gap-1 sm:grid-cols-2">
+            {checklist.map((item) => (
+              <li
+                key={item.key}
+                className={`flex items-center gap-1.5 text-sm ${item.ok ? "text-ink-600" : "text-danger-600"}`}
+              >
+                {item.ok ? <Check className="h-4 w-4 shrink-0" /> : <X className="h-4 w-4 shrink-0" />}
+                {item.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <section className="mt-8">
         <h2 className="font-display text-lg font-semibold text-ink-900">Mídia</h2>

@@ -44,6 +44,6 @@ export function buildOrganizationJsonLd() {
     "@type": "Organization",
     name: siteConfig.name,
     url: siteConfig.url,
-    email: siteConfig.contactEmail,
+    ...(siteConfig.contactEmail ? { email: siteConfig.contactEmail } : {}),
   };
 }

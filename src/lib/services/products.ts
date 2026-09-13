@@ -222,7 +222,7 @@ export async function setFeatured(id: string, featured: boolean, adminUserId: st
 export async function publishProduct(id: string, adminUserId: string) {
   const product = await prisma.product.findUnique({
     where: { id },
-    include: { offers: { where: { active: true } } },
+    include: { offers: { where: { active: true } }, media: true },
   });
   if (!product) throw new Error("Produto não encontrado.");
 
@@ -232,6 +232,7 @@ export async function publishProduct(id: string, adminUserId: string) {
     shortDescription: product.shortDescription,
     description: product.description,
     activeOfferCount: product.offers.length,
+    mediaCount: product.media.length,
   });
   if (!check.canPublish) {
     throw new Error(check.reasons.join(" "));
@@ -427,6 +428,31 @@ export async function addProductMedia(
 export async function removeProductMedia(mediaId: string, productId: string, adminUserId: string) {
   await prisma.productMedia.delete({ where: { id: mediaId } });
   await logAudit({ adminUserId, action: "product.media.remove", entityType: "Product", entityId: productId });
+}
+
+export async function updateProductMediaAltText(
+  mediaId: string,
+  productId: string,
+  altText: string,
+  adminUserId: string,
+) {
+  await prisma.productMedia.update({ where: { id: mediaId }, data: { altText: altText || null } });
+  await logAudit({ adminUserId, action: "product.media.update", entityType: "Product", entityId: productId });
+}
+
+/** Move a mídia para a posição 0 (capa), preservando a ordem relativa das demais. */
+export async function setCoverProductMedia(productId: string, mediaId: string) {
+  const media = await prisma.productMedia.findMany({
+    where: { productId },
+    orderBy: { position: "asc" },
+    select: { id: true },
+  });
+  const ids = media.map((m) => m.id);
+  const index = ids.indexOf(mediaId);
+  if (index <= 0) return;
+  ids.splice(index, 1);
+  ids.unshift(mediaId);
+  await reorderProductMedia(productId, ids);
 }
 
 export async function reorderProductMedia(productId: string, orderedIds: string[]) {

@@ -46,15 +46,38 @@ describe("products service — CRUD e publicação (integração)", () => {
       { title, shortDescription: "Resumo válido com dez chars", description: "Descrição válida com vinte caracteres" },
       adminId,
     );
+    await prisma.productMedia.create({
+      data: { productId: product.id, type: "IMAGE", url: "https://placehold.co/1.png", position: 0 },
+    });
     await expect(publishProduct(product.id, adminId)).rejects.toThrow(/oferta ativa/i);
   });
 
-  it("publica produto com ao menos uma oferta ativa e o remove de rascunhos", async () => {
+  it("não publica produto sem nenhuma mídia", async () => {
+    const title = uniqueTitle("Produto Sem Mídia");
+    const product = await createProduct(
+      { title, shortDescription: "Resumo válido com dez chars", description: "Descrição válida com vinte caracteres" },
+      adminId,
+    );
+    await createOffer({
+      productId: product.id,
+      marketplaceId,
+      destinationUrl: "https://loja-parceira-teste.com.br/produto-sem-midia",
+      affiliateUrl: "https://loja-parceira-teste.com.br/produto-sem-midia?ref=1",
+      isPrimary: true,
+      active: true,
+    });
+    await expect(publishProduct(product.id, adminId)).rejects.toThrow(/imagem/i);
+  });
+
+  it("publica produto com ao menos uma imagem e uma oferta ativa e o remove de rascunhos", async () => {
     const title = uniqueTitle("Produto Publicável");
     const product = await createProduct(
       { title, shortDescription: "Resumo válido com dez chars", description: "Descrição válida com vinte caracteres" },
       adminId,
     );
+    await prisma.productMedia.create({
+      data: { productId: product.id, type: "IMAGE", url: "https://placehold.co/1.png", position: 0 },
+    });
     await createOffer({
       productId: product.id,
       marketplaceId,
@@ -78,6 +101,9 @@ describe("products service — CRUD e publicação (integração)", () => {
       { title, shortDescription: "Resumo válido com dez chars", description: "Descrição válida com vinte caracteres" },
       adminId,
     );
+    await prisma.productMedia.create({
+      data: { productId: product.id, type: "IMAGE", url: "https://placehold.co/1.png", position: 0 },
+    });
     await createOffer({
       productId: product.id,
       marketplaceId,

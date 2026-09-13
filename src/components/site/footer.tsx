@@ -66,16 +66,18 @@ export function Footer() {
           </ul>
         </div>
 
-        <div>
-          <p className="text-sm font-semibold text-white">Contato</p>
-          <ul className="mt-3 space-y-2 text-sm text-ink-400">
-            <li>
-              <a href={`mailto:${siteConfig.contactEmail}`} className="hover:text-white">
-                {siteConfig.contactEmail}
-              </a>
-            </li>
-          </ul>
-        </div>
+        {siteConfig.contactEmail && (
+          <div>
+            <p className="text-sm font-semibold text-white">Contato</p>
+            <ul className="mt-3 space-y-2 text-sm text-ink-400">
+              <li>
+                <a href={`mailto:${siteConfig.contactEmail}`} className="hover:text-white">
+                  {siteConfig.contactEmail}
+                </a>
+              </li>
+            </ul>
+          </div>
+        )}
       </div>
 
       <div className="border-t border-white/10">

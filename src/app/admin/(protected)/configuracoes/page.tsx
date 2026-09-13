@@ -48,7 +48,7 @@ export default async function AdminSettingsPage() {
               ["Nome do site", siteConfig.name],
               ["Slogan", siteConfig.slogan],
               ["URL", siteConfig.url],
-              ["E-mail de contato", siteConfig.contactEmail],
+              ["E-mail de contato", siteConfig.contactEmail ?? "não configurado"],
               ["Google Analytics", siteConfig.analytics.gaId ? "configurado" : "não configurado"],
               ["Meta Pixel", siteConfig.analytics.metaPixelId ? "configurado" : "não configurado"],
               ["TikTok Pixel", siteConfig.analytics.tiktokPixelId ? "configurado" : "não configurado"],

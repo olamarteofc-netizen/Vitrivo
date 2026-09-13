@@ -8,6 +8,8 @@
  */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { MARKETPLACE_BOOTSTRAP } from "../src/lib/domain/marketplace-bootstrap";
+import { CATEGORY_BOOTSTRAP, TAG_BOOTSTRAP } from "../src/lib/domain/catalog-bootstrap";
 
 const prisma = new PrismaClient();
 
@@ -33,14 +35,15 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------
-  // Marketplaces
+  // Marketplaces (mesma fonte estrutural usada pela migration de bootstrap
+  // em produção — ver src/lib/domain/marketplace-bootstrap.ts)
   // ---------------------------------------------------------------------
-  const marketplaceDefs = [
-    { name: "Shopee", slug: "shopee", allowedHosts: "shopee.com.br,s.shopee.com.br", disclosureText: "Compra processada e entregue pela Shopee." },
-    { name: "Mercado Livre", slug: "mercado-livre", allowedHosts: "mercadolivre.com.br,mercadolibre.com", disclosureText: "Compra processada e entregue pelo Mercado Livre." },
-    { name: "TikTok Shop", slug: "tiktok-shop", allowedHosts: "tiktok.com,vt.tiktok.com", disclosureText: "Compra processada pelo TikTok Shop." },
-    { name: "Amazon", slug: "amazon", allowedHosts: "amazon.com.br,amzn.to", disclosureText: "Compra processada e entregue pela Amazon." },
-  ];
+  const marketplaceDefs = MARKETPLACE_BOOTSTRAP.map((def) => ({
+    name: def.name,
+    slug: def.slug,
+    allowedHosts: def.allowedHosts.join(","),
+    disclosureText: def.disclosureText,
+  }));
   const marketplaces = new Map<string, string>();
   for (const def of marketplaceDefs) {
     const mp = await prisma.marketplace.upsert({
@@ -52,7 +55,23 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------
-  // Categorias
+  // Categorias e tags estruturais reais (mesma fonte da migration de
+  // bootstrap em produção — ver src/lib/domain/catalog-bootstrap.ts)
+  // ---------------------------------------------------------------------
+  for (const def of CATEGORY_BOOTSTRAP) {
+    await prisma.category.upsert({
+      where: { slug: def.slug },
+      update: {},
+      create: { name: def.name, slug: def.slug, position: def.position },
+    });
+  }
+  for (const def of TAG_BOOTSTRAP) {
+    await prisma.tag.upsert({ where: { slug: def.slug }, update: {}, create: { name: def.name, slug: def.slug } });
+  }
+
+  // ---------------------------------------------------------------------
+  // Categorias de demonstração (usadas apenas pelos produtos fictícios
+  // abaixo — não confundir com as categorias reais criadas acima)
   // ---------------------------------------------------------------------
   const categoryDefs = [
     { name: "Wellness", slug: "wellness", description: "Bem-estar e autocuidado no dia a dia.", position: 0 },

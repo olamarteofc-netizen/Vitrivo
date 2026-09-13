@@ -14,6 +14,8 @@ import {
   addProductMedia,
   removeProductMedia,
   reorderProductMedia,
+  updateProductMediaAltText,
+  setCoverProductMedia,
   getProductByIdAdmin,
 } from "@/lib/services/products";
 import { createOffer, updateOffer, deleteOffer, setPrimaryOffer, setOfferActive, markOfferChecked, reorderOffers } from "@/lib/services/offers";
@@ -161,6 +163,23 @@ export async function addMediaAction(productId: string, formData: FormData) {
 export async function removeMediaAction(mediaId: string, productId: string) {
   const session = await requireAdminSession();
   await removeProductMedia(mediaId, productId, session.user.id);
+  revalidatePath(`/admin/produtos/${productId}`);
+  const product = await getProductByIdAdmin(productId);
+  revalidatePublicProductPaths(product?.slug);
+}
+
+export async function updateMediaAltAction(mediaId: string, productId: string, formData: FormData) {
+  const session = await requireAdminSession();
+  const altText = String(formData.get("altText") ?? "").trim();
+  await updateProductMediaAltText(mediaId, productId, altText, session.user.id);
+  revalidatePath(`/admin/produtos/${productId}`);
+  const product = await getProductByIdAdmin(productId);
+  revalidatePublicProductPaths(product?.slug);
+}
+
+export async function setCoverMediaAction(productId: string, mediaId: string) {
+  await requireAdminSession();
+  await setCoverProductMedia(productId, mediaId);
   revalidatePath(`/admin/produtos/${productId}`);
   const product = await getProductByIdAdmin(productId);
   revalidatePublicProductPaths(product?.slug);
