@@ -151,7 +151,6 @@ export async function addMediaAction(productId: string, formData: FormData) {
     type: formData.get("type"),
     url: formData.get("url"),
     altText: formData.get("altText"),
-    position: 9999,
   });
   if (!parsed.success) return;
   await addProductMedia(productId, parsed.data, session.user.id);

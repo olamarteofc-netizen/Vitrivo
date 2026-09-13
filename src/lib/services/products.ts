@@ -417,10 +417,14 @@ export async function getRelatedProducts(product: { id: string; categoryId: stri
 
 export async function addProductMedia(
   productId: string,
-  data: { type: "IMAGE" | "VIDEO"; url: string; altText?: string; position: number },
+  data: { type: "IMAGE" | "VIDEO"; url: string; altText?: string },
   adminUserId: string,
 ) {
-  const media = await prisma.productMedia.create({ data: { productId, ...data } });
+  // Sempre acrescenta ao final: usar um valor fixo (ex.: 9999) para múltiplas
+  // mídias adicionadas em sequência gera posições empatadas, cuja ordem de
+  // leitura não é garantida pelo banco.
+  const count = await prisma.productMedia.count({ where: { productId } });
+  const media = await prisma.productMedia.create({ data: { productId, ...data, position: count } });
   await logAudit({ adminUserId, action: "product.media.add", entityType: "Product", entityId: productId });
   return media;
 }
