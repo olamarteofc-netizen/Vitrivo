@@ -250,3 +250,224 @@ por teste E2E automatizado.
 - [x] Sem segredos reais no código
 - [x] Sem erros críticos, dados falsos apresentados como reais, ou tarefas
       escondidas em comentários — dados de demonstração claramente marcados
+
+---
+---
+
+# RELATÓRIO DE ENTREGA — VITRIVO (Fase 2: Auditoria e preparação operacional)
+
+**Data:** 12–13/09/2026 (execução autônoma noturna)
+**Escopo:** deixar a Vitrivo pronta para cadastro real de produtos pelo
+painel, sem editar código, com upload direto de imagens, marketplaces
+funcionando e link de afiliado `meli.la` aceito.
+
+Este relatório complementa (não substitui) o relatório de Fase 1 acima.
+
+## 1. Estado encontrado
+
+- Produção (Vercel + Neon Postgres) já estava no ar, com login funcionando
+  (relatado na sessão anterior), mas **completamente vazia**: 0 marketplaces,
+  0 categorias, 0 tags, 0 produtos — só as migrations haviam rodado, nunca o
+  seed.
+- Painel admin abria normalmente, mas o select de "Marketplace" ao adicionar
+  uma oferta aparecia vazio (só a opção "Selecione").
+- Upload de imagem só existia por URL colada — sem envio direto de arquivo.
+- Um rascunho real já existia, criado por Richardy antes desta sessão:
+  **"Escova Elétrica de Limpeza 5 em 1 Recarregável"** (sem mídia, sem
+  oferta, sem categoria) — o produto real combinado é o de **9 em 1**
+  (modelo JY-6010), então esse rascunho de 5 em 1 é uma versão anterior/
+  incorreta.
+- E-mail de contato exibido publicamente era o placeholder
+  `contato@exemplo.com` (fallback fixo no código, `NEXT_PUBLIC_CONTACT_EMAIL`
+  não configurado).
+
+## 2. Problemas encontrados
+
+1. **Select de marketplace vazio** (crítico — bloqueava cadastro de ofertas).
+2. **Sem upload direto de imagem** (só URL externa).
+3. **Checklist de publicação não exigia mídia** — um produto sem nenhuma
+   imagem podia ser publicado.
+4. **E-mail de contato fictício exibido publicamente** e no JSON-LD.
+5. **Bug de posição duplicada ao adicionar mídia em sequência** — encontrado
+   *durante a própria validação manual desta sessão* (não existia antes do
+   upload direto, que passou a permitir adicionar várias imagens de uma vez
+   rapidamente): `addMediaAction` sempre gravava `position: 9999`, então duas
+   imagens adicionadas em sequência empatavam na mesma posição.
+6. **Suíte de testes usava SQLite**, incompatível com o `schema.prisma`
+   atual (Postgres) — teria quebrado na primeira execução de `npm test`.
+
+## 3. Causa do "Marketplace vazio"
+
+Não era um bug de código. `listActiveMarketplaces()` e o componente
+`OfferFormFields` estavam corretos — o problema era puramente de **dado
+ausente em produção**: a tabela `marketplaces` nunca foi populada, porque só
+`prisma migrate deploy` roda no deploy (correto, não deve rodar seed de
+demonstração em produção), e ninguém havia executado um bootstrap
+estrutural. Corrigido com uma migration idempotente dedicada (não com seed)
+— ver seção 5.
+
+## 4. Alterações realizadas
+
+- Bootstrap idempotente (via migration SQL, `ON CONFLICT DO NOTHING`) de 4
+  marketplaces (Mercado Livre, Shopee, TikTok Shop, Amazon — com
+  `allowedHosts` corretos, incluindo `meli.la`), 9 categorias reais e 7 tags
+  reais, aplicado imediatamente em produção.
+- Upload direto de imagens via Vercel Blob: seleção múltipla de arquivo,
+  barra de progresso, persistência automática da URL.
+- Gerenciamento de mídia: definir capa, editar texto alternativo, excluir
+  com confirmação (antes não pedia confirmação).
+- Checklist de publicação: adicionado requisito de mídia; UI trocada de
+  texto corrido de erros para lista com ✓/✗ por item.
+- Removido o e-mail de contato fictício: sem valor configurado, o campo
+  simplesmente não aparece (rodapé, página de Contato, JSON-LD).
+- Corrigido bug de posição duplicada ao adicionar mídia (ver seção 2.5).
+- Migrada a suíte de testes para um Postgres de teste isolado.
+
+## 5. Arquivos alterados (principais)
+
+Novos:
+- `src/lib/domain/marketplace-bootstrap.ts`, `src/lib/domain/catalog-bootstrap.ts`
+- `prisma/migrations/20260912232419_bootstrap_catalog_structural_data/migration.sql`
+- `src/app/api/admin/media/upload/route.ts`
+- `tests/integration/{marketplaces,media,redirect}.test.ts`
+
+Modificados (não reescritos do zero): `media-manager.tsx`, `actions.ts`,
+`products.ts` (services), `publish-rules.ts`, `[id]/page.tsx` (admin
+produto), `site.ts`, `structured-data.ts`, `footer.tsx`,
+`contato/page.tsx`, `configuracoes/page.tsx`, `seed.ts`,
+`vitest.config.mts`, `tests/global-setup.ts`, `.env.example`,
+`package.json` (dependências `@vercel/blob`, `dotenv`).
+
+## 6. Banco e migrations
+
+- Nenhuma alteração destrutiva. Duas migrations novas nesta sessão:
+  `20260912232419_bootstrap_catalog_structural_data` (dados estruturais) —
+  já estava documentada na sessão anterior como parte da configuração do
+  Postgres.
+- Migrations aplicadas em produção via `prisma migrate deploy` local
+  (usando `DATABASE_URL`/`DIRECT_URL` de produção só para o comando, nunca
+  salvas fora de `.env` local) e confirmadas por `prisma migrate deploy`
+  automático no build da Vercel (`vercel-build` script).
+- Banco de teste (`vitrivo_test`, mesmo projeto Neon, banco separado) criado
+  e mantido isolado do de produção.
+
+## 7. Upload de imagens
+
+- Armazenamento: Vercel Blob (não filesystem, não base64 no Postgres).
+- Formatos aceitos: JPG, JPEG, PNG, WEBP. Limite: 8 MB por arquivo.
+- Autenticação: token de upload só é gerado para sessão de admin válida
+  (`onBeforeGenerateToken` chama `getAdminSession()`).
+- Testado em produção: 2 arquivos enviados com sucesso, URLs reais geradas
+  em `https://<store-id>.public.blob.vercel-storage.com/...`, refletidas
+  imediatamente no checklist e na galeria pública.
+
+## 8. Segurança de URLs (auditoria, sem necessidade de reescrever)
+
+`src/lib/redirect/allowlist.ts` já validava hostname via `new URL(...).hostname`
+(comparação exata ou sufixo `.host`), não `.includes()` — já impedia
+`mercadolivre.com.br.site-malicioso.com`. `meli.la` foi adicionado à
+allowlist do Mercado Livre (domínio distinto, não subdomínio). Testado com
+casos explícitos de aceitação (`meli.la`, URL longa `mercadolivre.com.br`) e
+rejeição (domínio disfarçado).
+
+## 9. Testes
+
+`npm test`: **103 testes passando** (13 arquivos), incluindo os 8 novos
+cenários pedidos explicitamente (Mercado Livre/Shopee no select, `meli.la`
+aceito, domínio falso rejeitado, produto sem mídia/sem oferta não publica,
+produto válido publica, clique registra analytics, redirecionamento usa
+`affiliateUrl`, arquivar remove do catálogo). `npm run lint` e
+`npm run typecheck`: sem erros.
+
+**Não executado:** suíte Playwright (`test:e2e`) — não rodada nesta sessão
+por não haver um ambiente de navegador Playwright configurado aqui; a
+validação end-to-end foi feita manualmente em produção real (seção 13),
+que é uma verificação mais forte para este caso específico, mas Richardy
+deve rodar `npm run test:e2e` localmente para confirmar que os specs
+existentes continuam passando.
+
+## 10. Resultado do build
+
+```
+✓ Compiled successfully
+✓ Generating static pages (29/29)
+```
+Local (`npm run build`) e na Vercel, sem erros, em ambos os deploys desta
+sessão.
+
+## 11. Commits
+
+1. `4cd24ca` — marketplaces estruturais, upload de imagens, checklist de
+   publicação, remoção do placeholder de e-mail, migração dos testes.
+2. `911efb3` — correção do bug de posição duplicada em mídia.
+
+## 12. Deploy
+
+Ambos os commits deployados em produção via push para `master` (Vercel
+Git integration), com build automático (`vercel-build`: `prisma migrate
+deploy && next build`). Os dois deploys concluíram com status **Ready**.
+
+## 13. Testes em produção (navegador real, sessão logada)
+
+Executado manualmente, com um produto de teste claramente identificado
+(**"[QA] Teste de publicação (apagar depois)"**, categoria Limpeza, sem
+preço/dados comerciais inventados) criado, testado e **arquivado ao final**:
+
+- ✅ Painel abre, login funciona (sessão da conversa anterior, ainda válida).
+- ✅ Dropdown de Marketplace mostra Mercado Livre, Shopee, TikTok Shop,
+  Amazon.
+- ✅ Upload de 2 imagens JPG via seleção de arquivo → Blob → banco, capa
+  marcada automaticamente na primeira.
+- ✅ Texto alternativo editado e persistido.
+- ✅ Checklist mostrou "Faltam 2 itens" → "Pronto para publicar" conforme
+  mídia/oferta eram adicionadas.
+- ✅ Oferta Mercado Livre cadastrada com URL de afiliado
+  `https://meli.la/qa-teste-vitrivo-123` — aceita sem erro.
+- ✅ Publicação (temporária, só para este teste) → página pública renderizou
+  galeria, categoria "Limpeza", badge "Melhor opção", CTA "Ver produto".
+- ✅ Clique em "Ver produto" com produto ainda em rascunho corretamente
+  bloqueado (`/oferta-indisponivel`); após publicar, redirecionou de fato
+  para `https://meli.la/qa-teste-vitrivo-123`.
+- ✅ Clique registrado e visível em `/admin/analytics` (por produto, por
+  marketplace, com dispositivo e data).
+- ✅ Arquivamento com confirmação funcionou; produto de teste ficou
+  `ARCHIVED` (não excluído) e some do catálogo público.
+- ⚠️ **Não testado**: visualização mobile real neste ambiente (a ferramenta
+  de redimensionamento de janela disponível nesta sessão não refletiu no
+  viewport capturado). O código usa classes responsivas do Tailwind em todo
+  o admin e nas páginas públicas (`sm:`, `md:`, `lg:`), incluindo um
+  componente de navegação mobile dedicado (`mobile-nav.tsx`), mas isso não
+  foi confirmado visualmente nesta sessão — recomendo um teste manual rápido
+  em celular real ou DevTools antes de considerar mobile 100% validado.
+
+## 14. Pendências reais
+
+- Teste manual em viewport mobile real (ver 13).
+- Suíte Playwright (`test:e2e`) não executada nesta sessão.
+- Rate limiting de login continua em memória por processo (limitação
+  conhecida e documentada no código; migrar para armazenamento
+  compartilhado tipo Redis exigiria contratar um serviço externo — decisão
+  fora da autonomia desta sessão).
+- E-mail de contato (`NEXT_PUBLIC_CONTACT_EMAIL`) continua sem valor —
+  intencional (não inventar dado), mas fica pendente definir e configurar.
+- Zoom/lightbox na galeria pública não foi implementado (avaliado como
+  refinamento secundário, não bloqueador do fluxo operacional).
+
+## 15. O que Richardy precisa fazer amanhã
+
+1. Cadastrar o produto real (**Escova Elétrica de Limpeza 9 em 1
+   Recarregável, JY-6010**) em `/admin/produtos/novo` — todo o fluxo já
+   está pronto: categoria "Limpeza" existe, marketplace "Mercado Livre"
+   existe, upload de imagem funciona, `meli.la` é aceito como URL de
+   afiliado.
+2. Decidir o que fazer com o rascunho antigo **"Escova Elétrica de Limpeza 5
+   em 1 Recarregável"** (`/admin/produtos` → filtrar por Rascunho): editar
+   para virar o produto real de 9 em 1, ou arquivar/deixar como rascunho
+   separado. Nenhuma alteração foi feita nele nesta sessão.
+3. Ao cadastrar a oferta real: preencher a URL longa do Mercado Livre em
+   "URL do produto no marketplace" e o link `https://meli.la/...` real
+   (fornecido pelo programa de afiliados) em "URL de afiliado".
+4. Revisar/definir `NEXT_PUBLIC_CONTACT_EMAIL` quando houver um e-mail
+   oficial (Configurações → Vercel → Environment Variables).
+5. Opcional: rodar `npm run test:e2e` localmente para confirmar os
+   specs Playwright existentes.
