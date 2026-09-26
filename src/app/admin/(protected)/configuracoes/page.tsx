@@ -24,7 +24,7 @@ export default async function AdminSettingsPage() {
 
       <Card>
         <CardBody>
-          <CardTitle>Banner inicial e curadoria</CardTitle>
+          <CardTitle>Banner inicial e texto da home</CardTitle>
           <div className="mt-4">
             <SettingsForm
               heroTitle={settings[HERO_TITLE_KEY]}

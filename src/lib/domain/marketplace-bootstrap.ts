@@ -1,5 +1,5 @@
 /**
- * Marketplaces estruturais obrigatórios da VITRIVO — fonte única de verdade.
+ * Marketplaces estruturais obrigatórios da LamarteShop — fonte única de verdade.
  *
  * Estes registros precisam existir em produção independentemente de
  * `prisma db seed` (que também cria produtos de demonstração, indesejados em

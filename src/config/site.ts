@@ -42,10 +42,10 @@ function readOptional(value: string | undefined): string | undefined {
 }
 
 export const siteConfig: SiteConfig = {
-  name: readOptional(process.env.NEXT_PUBLIC_SITE_NAME) ?? "VITRIVO",
+  name: readOptional(process.env.NEXT_PUBLIC_SITE_NAME) ?? "LamarteShop",
   slogan:
     readOptional(process.env.NEXT_PUBLIC_SITE_SLOGAN) ??
-    "Curadoria confiável de produtos",
+    "Material de tatuagem selecionado por quem tatua",
   url: readOptional(process.env.NEXT_PUBLIC_SITE_URL) ?? "http://localhost:3000",
   contactEmail: readOptional(process.env.NEXT_PUBLIC_CONTACT_EMAIL),
   social: {

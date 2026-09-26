@@ -71,7 +71,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
               </p>
             )}
           </div>
-          <span className="rounded-lg bg-ink-900 px-3 py-1.5 text-xs font-semibold text-white group-hover:bg-brand-700">
+          <span className="rounded-lg bg-ink-100 px-3 py-1.5 text-xs font-semibold text-white group-hover:bg-brand-700">
             Ver produto
           </span>
         </div>
