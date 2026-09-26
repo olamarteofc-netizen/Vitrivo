@@ -53,7 +53,7 @@ export function ProductGallery({ items, title }: { items: GalleryItem[]; title: 
               )}
             >
               {item.type === "VIDEO" ? (
-                <div className="flex h-full w-full items-center justify-center bg-ink-800 text-[10px] text-white">
+                <div className="flex h-full w-full items-center justify-center bg-ink-200 text-[10px] text-white">
                   Vídeo
                 </div>
               ) : (

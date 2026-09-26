@@ -3,11 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --color-background: #f8f7f5;
-  --color-surface: #ffffff;
-  --color-foreground: #211e1a;
-  --color-muted: #5c544a;
-  --color-border: #e4e0da;
+  /* Mesma base neutra escura da MetamorphosAI (--background/--panel/--text/--border). */
+  --color-background: #151719;
+  --color-surface: #1d2024;
+  --color-foreground: #f4f4f5;
+  --color-muted: #989fa8;
+  --color-border: #32373e;
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-display: "Fraunces", var(--font-sans);
 }
@@ -73,7 +74,7 @@ body {
   }
 
   .prose-content a {
-    @apply text-brand-700 underline underline-offset-2 hover:text-brand-800;
+    @apply text-brand-300 underline underline-offset-2 hover:text-brand-200;
   }
 
   .prose-content strong {
@@ -90,7 +91,7 @@ body {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background-color: theme("colors.ink.200");
+    background-color: theme("colors.ink.600");
     border-radius: 9999px;
   }
 }

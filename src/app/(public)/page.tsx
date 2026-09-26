@@ -32,7 +32,7 @@ export default async function HomePage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <section className="border-b border-border bg-gradient-to-b from-brand-50 to-background">
+      <section className="border-b border-border bg-gradient-to-br from-brand-950 via-background to-background">
         <div className="container-page grid gap-8 py-16 sm:py-20 lg:grid-cols-2 lg:items-center">
           <div>
             <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-brand-700">
@@ -41,7 +41,7 @@ export default async function HomePage() {
             <h1 className="text-balance font-display text-3xl font-bold leading-tight text-ink-900 sm:text-4xl lg:text-5xl">
               {settings[HERO_TITLE_KEY]}
             </h1>
-            <p className="mt-4 max-w-xl text-balance text-base text-ink-600 sm:text-lg">
+            <p className="mt-4 max-w-xl text-balance text-base text-ink-700 sm:text-lg">
               {settings[HERO_SUBTITLE_KEY]}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -50,7 +50,7 @@ export default async function HomePage() {
                 <ArrowRight className="h-4 w-4" />
               </LinkButton>
               <LinkButton href="/sobre" size="lg" variant="outline">
-                Como funciona a curadoria
+                Como escolhemos os produtos
               </LinkButton>
             </div>
           </div>
@@ -114,7 +114,7 @@ export default async function HomePage() {
       <section className="border-y border-border bg-ink-50">
         <div className="container-page grid gap-8 py-14 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <h2 className="font-display text-2xl font-semibold text-ink-900">O que é a curadoria {siteConfig.name}</h2>
+            <h2 className="font-display text-2xl font-semibold text-ink-900">Como a {siteConfig.name} escolhe os produtos</h2>
             <p className="prose-content mt-4">{settings[CURATION_TEXT_KEY]}</p>
           </div>
           <div className="flex items-start">

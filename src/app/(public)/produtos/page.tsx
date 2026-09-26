@@ -11,7 +11,7 @@ import type { SortOption } from "@/types";
 
 export const metadata: Metadata = {
   title: "Produtos",
-  description: "Catálogo completo de produtos selecionados pela curadoria.",
+  description: "Catálogo completo de material de tatuagem selecionado por quem tatua.",
 };
 
 const VALID_SORTS: SortOption[] = ["destaque", "recentes", "populares"];

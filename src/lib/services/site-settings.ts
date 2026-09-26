@@ -8,12 +8,12 @@ export const HERO_CTA_LABEL_KEY = "hero.ctaLabel";
 export const CURATION_TEXT_KEY = "home.curationText";
 
 export const DEFAULT_SETTINGS: Record<string, string> = {
-  [HERO_TITLE_KEY]: "Curadoria de produtos que valem o clique",
+  [HERO_TITLE_KEY]: "Material de tatuagem selecionado por quem tatua",
   [HERO_SUBTITLE_KEY]:
-    "Selecionamos produtos com potencial real, comparamos ofertas e te levamos direto ao marketplace de confiança.",
+    "Máquinas, tintas, agulhas, cartuchos e todo o resto — comparamos as ofertas dos marketplaces de confiança pra você equipar o setup sem perder tempo.",
   [HERO_CTA_LABEL_KEY]: "Ver catálogo",
   [CURATION_TEXT_KEY]:
-    "Cada produto listado aqui passa por uma triagem de reputação, avaliações e disponibilidade antes de ganhar uma página própria. Não vendemos diretamente — te conectamos à melhor oferta disponível em marketplaces parceiros.",
+    "Cada produto listado aqui é escolhido por quem tatua de verdade: conferimos marca, reputação, avaliações e disponibilidade antes de indicar. Não vendemos diretamente — te levamos para a melhor oferta nos marketplaces parceiros.",
 };
 
 export async function getSetting(key: string): Promise<string> {

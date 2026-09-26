@@ -33,7 +33,7 @@ export function SettingsForm({
         <Input id="heroCtaLabel" name="heroCtaLabel" required defaultValue={heroCtaLabel} />
       </div>
       <div>
-        <Label htmlFor="curationText">Texto sobre a curadoria (seção da home)</Label>
+        <Label htmlFor="curationText">Texto sobre a loja (seção da home)</Label>
         <Textarea id="curationText" name="curationText" rows={4} required defaultValue={curationText} />
       </div>
       {state.status === "idle" && state.message && <p className="text-sm font-medium text-brand-700">{state.message}</p>}
