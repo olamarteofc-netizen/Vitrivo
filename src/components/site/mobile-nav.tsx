@@ -20,7 +20,7 @@ export function MobileNav({
   }, [open]);
 
   return (
-    <div className="md:hidden">
+    <div className="ml-auto md:hidden">
       <button
         type="button"
         aria-label={open ? "Fechar menu" : "Abrir menu"}
